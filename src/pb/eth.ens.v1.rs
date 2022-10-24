@@ -9,7 +9,7 @@ pub struct Registration {
     #[prost(bytes="vec", tag="1")]
     pub from: ::prost::alloc::vec::Vec<u8>,
     #[prost(string, tag="2")]
-    pub name: ::prost::alloc::string::String,
+    pub ens: ::prost::alloc::string::String,
     #[prost(bytes="vec", tag="3")]
     pub trx_hash: ::prost::alloc::vec::Vec<u8>,
 }

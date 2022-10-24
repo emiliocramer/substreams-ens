@@ -4,7 +4,7 @@ build:
 
 .PHONY: stream
 stream:
-	substreams run -e api-dev.streamingfast.io:443 substreams.yaml map_transfers -s 12292922 -t +10
+	substreams run -e api-dev.streamingfast.io:443 substreams.yaml map_registrations -s 15819470 -t +10
 
 .PHONY: codegen
 codegen:

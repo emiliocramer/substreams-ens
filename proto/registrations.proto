@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package eth.ens.v1;
+
+message Registrations {
+  repeated Registration registrations = 1;
+}
+
+message Registration {
+  bytes from = 1;
+  string ens = 2;
+  bytes trx_hash = 3;
+}

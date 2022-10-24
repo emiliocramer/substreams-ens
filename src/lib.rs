@@ -1,54 +1,30 @@
 mod abi;
 mod pb;
 use hex_literal::hex;
-use pb::erc721;
-use substreams::prelude::*;
 use substreams::{log, store::StoreAddInt64, Hex};
-use substreams_ethereum::{pb::eth::v2 as eth, NULL_ADDRESS};
+use substreams_ethereum::{pb::eth::v2 as eth};
+use crate::pb::ens;
 
-// Bored Ape Club Contract
-const TRACKED_CONTRACT: [u8; 20] = hex!("bc4ca0eda7647a8ab7c2061c2e118a18a936f13d");
+// ETH Registrar Controller Contract
+const TRACKED_CONTRACT: [u8; 20] = hex!("283Af0B28c62C092C9727F1Ee09c02CA627EB7F5");
 
 substreams_ethereum::init!();
 
-/// Extracts transfers events from the contract
+/// Extract Registration Events
 #[substreams::handlers::map]
-fn map_transfers(blk: eth::Block) -> Result<erc721::Transfers, substreams::errors::Error> {
-    Ok(erc721::Transfers {
-        transfers: blk
-            .events::<abi::erc721::events::Transfer>(&[&TRACKED_CONTRACT])
-            .map(|(transfer, log)| {
-                substreams::log::info!("NFT Transfer seen");
+fn map_transfers(blk: eth::Block) -> Result<ens::Registrations, substreams::errors::Error> {
+    Ok(ens::Registrations {
+        registrations: blk
+            .events::<abi::ens::functions::RegisterWithConfig>(&[&TRACKED_CONTRACT])
+            .map(|(registration, log)| {
+                substreams::log::info!("ENS registration seen");
 
-                erc721::Transfer {
+                ens::Registration {
                     trx_hash: log.receipt.transaction.hash.clone(),
-                    from: transfer.from,
-                    to: transfer.to,
-                    token_id: transfer.token_id.low_u64(),
-                    ordinal: log.block_index() as u64,
+                    from: registration.owner,
+                    ens: registration.name,
                 }
             })
             .collect(),
     })
-}
-
-/// Store the total balance of NFT tokens for the specific TRACKED_CONTRACT by holder
-#[substreams::handlers::store]
-fn store_transfers(transfers: erc721::Transfers, s: StoreAddInt64) {
-    log::info!("NFT holders state builder");
-    for transfer in transfers.transfers {
-        if transfer.from != NULL_ADDRESS {
-            log::info!("Found a transfer out {}", Hex(&transfer.trx_hash));
-            s.add(transfer.ordinal, generate_key(&transfer.from), -1);
-        }
-
-        if transfer.to != NULL_ADDRESS {
-            log::info!("Found a transfer in {}", Hex(&transfer.trx_hash));
-            s.add(transfer.ordinal, generate_key(&transfer.to), 1);
-        }
-    }
-}
-
-fn generate_key(holder: &Vec<u8>) -> String {
-    return format!("total:{}:{}", Hex(holder), Hex(TRACKED_CONTRACT));
 }
